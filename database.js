@@ -30,4 +30,30 @@ export class Database {
 
     this.#persist();
   }
+
+  update(table, id, data) {
+    if (Array.isArray(this.#database[table])) {
+      const index = this.#database[table].findIndex((row) => row.id === id);
+
+      if (index > -1) {
+        this.#database[table][index] = {
+          ...this.#database[table][index],
+          ...data,
+          updatedAt: new Date(),
+        };
+        this.#persist();
+      }
+    }
+  }
+
+  delete(table, id) {
+    if (Array.isArray(this.#database[table])) {
+      const index = this.#database[table].findIndex((row) => row.id === id);
+
+      if (index > -1) {
+        this.#database[table].splice(index, 1);
+        this.#persist();
+      }
+    }
+  }
 }

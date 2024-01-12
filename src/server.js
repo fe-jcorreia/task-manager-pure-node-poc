@@ -1,36 +1,23 @@
 import http from "node:http";
-import { Database } from "../database.js";
-import { streamReader } from "./middlewares/stream-reader.js";
-import { randomUUID } from "node:crypto";
-
-const database = new Database();
+import { fullStreamRead } from "./middlewares/stream-reader.js";
+import { routes } from "./routes.js";
+import { buildRequestParams } from "./utils/build-request-params.js";
 
 const server = http.createServer(async (request, response) => {
   await fullStreamRead(request, response);
 
-  if (request.method === "GET" && request.url === "/tasks") {
-    const data = database.select("tasks");
+  const route = routes.find((route) => {
+    return route.method === request.method && route.path.test(request.url);
+  });
 
-    return response.writeHead(200).end(JSON.stringify(data));
+  if (route) {
+    buildRequestParams(request, response, route);
+    console.log(request.query)
+
+    return route.handler(request, response);
   }
 
-  if (request.method === "POST" && request.url === "/tasks") {
-    const { title, description } = request.body;
-
-    database.insert(
-      "tasks",
-      Object.assign({
-        id: randomUUID(),
-        title,
-        description,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        completedAt: null,
-      })
-    );
-
-    return response.writeHead(204).end();
-  }
+  return response.writeHead(404).end();
 });
 
 server.listen(3333);

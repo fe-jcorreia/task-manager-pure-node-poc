@@ -12,7 +12,6 @@ const server = http.createServer(async (request, response) => {
 
   if (route) {
     buildRequestParams(request, response, route);
-    console.log(request.query)
 
     return route.handler(request, response);
   }

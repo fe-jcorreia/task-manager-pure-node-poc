@@ -9,7 +9,8 @@ export const routes = [
     method: "GET",
     path: extractUrlParams("/tasks"),
     handler: (request, response) => {
-      const data = database.select("tasks");
+      const filters = request.query;
+      const data = database.select("tasks", filters);
 
       return response.writeHead(200).end(JSON.stringify(data));
     },

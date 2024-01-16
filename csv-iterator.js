@@ -1,34 +1,54 @@
-import assert from 'node:assert';
-import { generate } from 'csv-generate';
-import { parse } from 'csv-parse';
+import { parse } from "csv-parse";
+import fs from "node:fs";
+import { finished } from "node:stream/promises";
+import { Readable } from "node:stream";
+
+class CreateCSVEntries extends Readable {
+  _read() {
+    let record;
+    console.log("--------------------");
+    while ((record = this.parser.read()) !== null) {
+      console.log(record);
+      this._postData(record);
+    }
+  }
+
+  async _postData(record) {
+    try {
+      const response = await fetch("http://localhost:3333/tasks", {
+        method: "POST",
+        body: Buffer.from(JSON.stringify(Object.assign(record))),
+        duplex: "half",
+      }).then((response) => {
+        response.text().then((data) => console.log(data));
+      });
+
+      const data = await response.text();
+      console.log(data);
+    } catch (error) {
+      console.error("Error while posting data:", error);
+    }
+  }
+}
 
 (async () => {
-  // Initialise the parser by generating random records
-  const parser = generate({
-    high_water_mark: 64 * 64,
-    length: 100
-  }).pipe(
-    parse()
-  );
-  // Intialise count
-  let count = 0;
-  // Report start
-  process.stdout.write('start\n');
-  // Iterate through each records
-  for await (const record of parser) {
-    // Report current line
-    process.stdout.write(`${count++} ${record.join(',')}\n`);
-    // Fake asynchronous operation
-    await fetch("http://localhost:3333", {
-      method: "POST",
-      body: parser,
-      duplex: "half",
-    }).then((response) => {
-      response.text().then((data) => console.log(data));
-    });
-  }
-  // Report end
-  process.stdout.write('...done\n');
-  // Validation
-  assert.strictEqual(count, 100);
+  const parser = fs
+    .createReadStream("./file.csv")
+    .pipe(parse({ columns: true }))
+    .pipe(new CreateCSVEntries());
+
+  // parser.on("readable", async function () {
+  //   let record;
+  //   while ((record = parser.read()) !== null) {
+  //     await fetch("http://localhost:3333/tasks", {
+  //       method: "POST",
+  //       body: Buffer.from(JSON.stringify(Object.assign(record))),
+  //       duplex: "half",
+  //     }).then((response) => {
+  //       response.text().then((data) => console.log(data));
+  //     });
+  //   }
+  // });
+
+  await finished(parser);
 })();

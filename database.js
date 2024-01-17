@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { AppError } from "./src/app-error.js";
 
 const databasePath = new URL("db.json", import.meta.url);
 
@@ -50,6 +51,8 @@ export class Database {
           updatedAt: new Date(),
         };
         this.#persist();
+      } else {
+        throw new AppError({ code: 404, message: "Task not found" });
       }
     }
   }
@@ -61,6 +64,8 @@ export class Database {
       if (index > -1) {
         this.#database[table].splice(index, 1);
         this.#persist();
+      } else {
+        throw new AppError({ code: 404, message: "Task not found" });
       }
     }
   }

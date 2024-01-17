@@ -1,6 +1,8 @@
 import { extractUrlParams } from "./utils/extract-url-params.js";
 import { Database } from "../database.js";
 import { randomUUID } from "node:crypto";
+import { verifyInput } from "./middlewares/verify-input.js";
+import { errorMapper } from "./app-error.js";
 
 const database = new Database();
 
@@ -19,6 +21,13 @@ export const routes = [
     method: "POST",
     path: extractUrlParams("/tasks"),
     handler: (request, response) => {
+      try {
+        verifyInput(request, response);
+      } catch (error) {
+        return response
+          .writeHead(error.code)
+          .end(JSON.stringify(errorMapper(error)));
+      }
       const { title, description } = request.body;
 
       database.insert(
@@ -40,10 +49,23 @@ export const routes = [
     method: "PUT",
     path: extractUrlParams("/tasks/:id"),
     handler: (request, response) => {
+      try {
+        verifyInput(request, response);
+      } catch (error) {
+        return response
+          .writeHead(error.code)
+          .end(JSON.stringify(errorMapper(error)));
+      }
       const { id } = request.params;
       const { title, description } = request.body;
 
-      database.update("tasks", id, { title, description });
+      try {
+        database.update("tasks", id, { title, description });
+      } catch (error) {
+        return response
+          .writeHead(error.code)
+          .end(JSON.stringify(errorMapper(error)));
+      }
 
       return response.writeHead(200).end();
     },
@@ -54,7 +76,13 @@ export const routes = [
     handler: (request, response) => {
       const { id } = request.params;
 
-      database.delete("tasks", id);
+      try {
+        database.delete("tasks", id);
+      } catch (error) {
+        return response
+          .writeHead(error.code)
+          .end(JSON.stringify(errorMapper(error)));
+      }
 
       return response.writeHead(200).end();
     },
@@ -65,7 +93,13 @@ export const routes = [
     handler: (request, response) => {
       const { id } = request.params;
 
-      database.update("tasks", id, { completedAt: new Date() });
+      try {
+        database.update("tasks", id, { completedAt: new Date() });
+      } catch (error) {
+        return response
+          .writeHead(error.code)
+          .end(JSON.stringify(errorMapper(error)));
+      }
 
       return response.writeHead(200).end();
     },
